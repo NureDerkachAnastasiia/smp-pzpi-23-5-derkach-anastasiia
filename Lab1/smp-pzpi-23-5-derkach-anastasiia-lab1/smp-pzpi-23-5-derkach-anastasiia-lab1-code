@@ -1,0 +1,173 @@
+#!/bin/bash
+
+if [[ "$1" == "--help" ]]; then
+    echo "Скрипт для конвертації розкладу в формат CSV для Google Календаря."
+    echo "Використання: $0 [--help | --version] | [[-q|--quiet] [академ_група] файл_із_cist.csv]"
+    echo "--help     — Вивести інформацію про скрипт."
+    echo "--version  — Вивести інформацию про версію скрипту."
+    echo "-q або --quiet — Не виводити інформацію в стандартний потік виводу."
+    exit 0
+fi
+
+if [[ "$1" == "--version" ]]; then
+    echo "Версія скрипту: 1.0"
+    exit 0
+fi
+
+QUIET=false
+if [[ "$1" == "-q" || "$1" == "--quiet" ]]; then
+    QUIET=true
+    shift
+fi
+
+file=""
+group=""
+
+if [[ $# -gt 0 ]]; then
+    if [[ $# -eq 1 ]]; then
+        if [[ "$1" =~ \.csv$ ]]; then
+            file="$1"
+        else
+            group="$1"
+        fi
+    elif [[ $# -eq 2 ]]; then
+        group="$1"
+        file="$2"
+    fi
+fi
+
+while [[ -n "$file" && ! -f "$file" ]]; do
+    echo "Файл '$file' не знайдений. Виберіть один з доступних файлів:"
+    select file in $(ls TimeTable_??_??_20??.csv 2>/dev/null); do
+        if [[ -n "$file" ]]; then
+            break
+        else
+            echo "Невірний вибір. Спробуйте знову."
+        fi
+    done
+done
+
+if [[ -z "$file" ]]; then
+    csv_files=$(ls TimeTable_??_??_20??.csv 2>/dev/null)
+    if [[ -z "$csv_files" ]]; then
+        echo "Немає доступних CSV файлів."
+        exit 1
+    fi
+    echo "Виберить CSV файл:"
+    select file in $csv_files; do
+        if [[ -n "$file" ]]; then
+            break
+        fi
+    done
+fi
+
+FILE_ENCODING=$(file -i "$file" | sed -E 's/.*charset=([^ ]+).*/\1/')
+TEMP_FILE="$file.tmp"
+if [[ "$FILE_ENCODING" != "utf-8" ]]; then
+    iconv -f "cp1251" -t UTF-8 "$file" -o "$TEMP_FILE"
+    file="$TEMP_FILE"
+fi
+
+groups=$(tr '\r' '\n' < "$file" | tail -n +2 | awk -F',' '{gsub(/"/, "", $1); split($1, a, " "); print a[1]}' | sort | uniq)
+
+while [[ -n "$group" && ! $(echo "$groups" | grep -w "$group") ]]; do
+    echo "Группа '$group' не знайдена. Виберіть одну з доступних груп:"
+    select group in $groups; do
+        if [[ -n "$group" ]]; then
+            break
+        else
+            echo "Невірний вибір. Сробуйте знову."
+        fi
+    done
+done
+
+if [[ -z "$group" ]]; then
+    echo "Виберіть групу:"
+    select group in $groups; do
+        if [[ -n "$group" ]]; then
+            break
+        fi
+    done
+fi
+
+OUTPUT_FILE=$(echo "$file" | sed 's/\.tmp$//' | sed 's/^/Google_/')
+
+# tr '\r' '\n' < "$file" | head -n 5
+
+echo "\"Subject\",\"Start Date\",\"Start Time\",\"End Date\",\"End Time\",\"Description\"" > "$OUTPUT_FILE"
+
+lines=$(tr '\r' '\n' < "$file" | tail -n +2 | awk -F'","' '
+{
+    split($2, date, ".");
+
+    date_key = sprintf("%02d%02d", date[2], date[1]);
+
+    split($3, time, ":");
+    time_key = time[1] time[2];
+
+    print date_key, time_key, $0;
+}' | sort -k1,1n -k2,2n -k3,3n | cut -d' ' -f3-)
+
+echo "$lines" | awk -F'","' -v group="$group" '
+BEGIN {
+}
+{
+    gsub(/"/, "", $1);
+    gsub(/"/, "", $NF);
+
+    col1 = $1;
+    col2 = $2;
+    col3 = $3;
+    col4 = $4;
+    col5 = $5;
+    col12 = $12;
+
+    if (col1 ~ "^" group) {
+        subject = substr(col1, length(group) + 4);
+
+        if (!(subject in lesson_counter_map)) lesson_counter_map[subject] = 0;
+        if (!(subject in practice_counter_map)) practice_counter_map[subject] = 0;
+        if (!(subject in lab_counter_map)) lab_counter_map[subject] = 0;
+        if (!(subject in lab_increment_map)) lab_increment_map[subject] = 0;
+
+        if (col1 ~ /Лк/) {
+            lesson_counter_map[subject]++;
+            subject = subject "; №" lesson_counter_map[subject];
+        } else if (col1 ~ /Пз/) {
+            practice_counter_map[subject]++;
+            subject = subject "; №" practice_counter_map[subject];
+        } else if (col1 ~ /Лб/) {
+            subject_key = subject;
+            if (lab_increment_map[subject_key] % 2 == 0) {
+                lab_counter_map[subject_key]++;
+            }
+
+            subject = subject "; №" lab_counter_map[subject_key];
+            lab_increment_map[subject_key]++;
+        }
+
+        split(col2, date, ".");
+        start_date = sprintf("%02d/%02d/%s", date[2], date[1], date[3]);
+
+        split(col4, date, ".");
+        end_date = sprintf("%02d/%02d/%s", date[2], date[1], date[3]);
+
+        start_time = substr(col3, 1, 5);
+        end_time = substr(col5, 1, 5);
+
+        print "\"" subject "\",\"" start_date "\",\"" start_time "\",\"" end_date "\",\"" end_time "\",\"" col12 "\"";
+    }
+}' >> "$OUTPUT_FILE"
+
+unix2dos "$OUTPUT_FILE"
+
+if [ -f "$TEMP_FILE" ]; then
+    rm "$TEMP_FILE"
+fi
+
+if ! $QUIET; then
+    cat "$OUTPUT_FILE"
+fi
+
+echo "Результат записаний до файлу $OUTPUT_FILE"
+exit 0
