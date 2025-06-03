@@ -1,0 +1,61 @@
+#!/bin/bash
+
+if (( $# != 2 || $1 < 8 || $2 < ($1 / 2 * 2) - 1 || $2 > ($1 / 2 * 2) )); then
+    echo "Failed to build the tree" >&2
+    exit 1
+fi
+
+
+HEIGHT=$(( $1 / 2 * 2 ))
+SNOW_WIDTH=$(( $HEIGHT - 1 ))
+
+draw_branch_layer() {
+    local layer_height=$(( ($HEIGHT - 2) / 2 ))
+    local max_width=$(( $SNOW_WIDTH - 2 ))
+    local symbol="*"
+
+    for ((i = 1; i <= layer_height; i++)); do
+        local width=$(( 1 + (i - 1) * 2 ))
+        local padding=$(( ((max_width - width) / 2) + 1 ))
+
+        printf "%${padding}s" ""
+        printf "%${width}s\n" | tr ' ' "$symbol"
+
+        if [[ "$symbol" == "*" ]]; then
+            symbol="#"
+        else
+            symbol="*"
+        fi
+    done
+
+    i=2
+    until [[ $i -gt layer_height ]]; do
+        local width=$(( 1 + (i - 1) * 2 ))
+        local padding=$(( ((max_width - width) / 2) + 1 ))
+
+        printf "%${padding}s" ""
+        printf "%${width}s\n" | tr ' ' "$symbol"
+
+        if [[ "$symbol" == "*" ]]; then
+            symbol="#"
+        else
+            symbol="*"
+        fi
+        ((i++))
+    done
+}
+
+draw_branch_layer $(((HEIGHT - 1) / 2)) $((SNOW_WIDTH - 2))
+
+padding=$(( (SNOW_WIDTH - 3) / 2 ))
+
+for trunk in 1 2; do
+    printf "%${padding}s###\n"
+done
+
+i=0
+while [[ $i -lt $SNOW_WIDTH ]]; do
+    printf "*"
+    ((i++))
+done
+printf "\n"
