@@ -116,3 +116,176 @@ Google_TimeTable_??_??_20??.csv
 
 GitHub репозиторій:
 
+  1 #!/bin/bash
+  2
+  3 if [[ "$1" == "--help" ]]; then
+  4     echo "Скрипт для конвертації розкладу в формат CSV для Google Календаря."
+  5     echo "Використання: $0 [--help | --version] | [[-q|--quiet] [академ_група] файл_із_cist.csv]"
+  6     echo "--help     — Вивести інформацію про скрипт."
+  7     echo "--version  — Вивести інформацию про версію скрипту."
+  8     echo "-q або --quiet — Не виводити інформацію в стандартний потік виводу."
+  9     exit 0
+ 10 fi
+ 11
+ 12 if [[ "$1" == "--version" ]]; then
+ 13     echo "Версія скрипту: 1.0"
+ 14     exit 0
+ 15 fi
+ 16
+ 17 QUIET=false
+ 18 if [[ "$1" == "-q" || "$1" == "--quiet" ]]; then
+ 19     QUIET=true
+ 20     shift
+ 21 fi
+ 22
+ 23 file=""
+ 24 group=""
+ 25
+ 26 if [[ $# -gt 0 ]]; then
+ 27     if [[ $# -eq 1 ]]; then
+ 28         if [[ "$1" =~ \.csv$ ]]; then
+ 29             file="$1"
+ 30         else
+ 31             group="$1"
+ 32         fi
+ 33     elif [[ $# -eq 2 ]]; then
+ 34         group="$1"
+ 35         file="$2"
+ 36     fi
+ 37 fi
+ 38
+ 39 while [[ -n "$file" && ! -f "$file" ]]; do
+ 40     echo "Файл '$file' не знайдений. Виберіть один з доступних файлів:"
+ 41     select file in $(ls TimeTable_??_??_20??.csv 2>/dev/null); do
+ 42         if [[ -n "$file" ]]; then
+ 43             break
+ 44         else
+ 45             echo "Невірний вибір. Спробуйте знову."
+ 46         fi
+ 47     done
+ 48 done
+ 49
+ 50 if [[ -z "$file" ]]; then
+ 51     csv_files=$(ls TimeTable_??_??_20??.csv 2>/dev/null)
+ 52     if [[ -z "$csv_files" ]]; then
+ 53         echo "Немає доступних CSV файлів."
+ 54         exit 1
+ 55     fi
+ 56     echo "Виберить CSV файл:"
+ 57     select file in $csv_files; do
+ 58         if [[ -n "$file" ]]; then
+ 59             break
+ 60         fi
+ 61     done
+ 62 fi
+ 63
+ 64 FILE_ENCODING=$(file -i "$file" | sed -E 's/.*charset=([^ ]+).*/\1/')
+ 65 TEMP_FILE="$file.tmp"
+ 66 if [[ "$FILE_ENCODING" != "utf-8" ]]; then
+ 67     iconv -f "cp1251" -t UTF-8 "$file" -o "$TEMP_FILE"
+ 68     file="$TEMP_FILE"
+ 69 fi
+ 70
+ 71 groups=$(tr '\r' '\n' < "$file" | tail -n +2 | awk -F',' '{gsub(/"/, "", $1); split($1, a, " "); print a[1]}' | sort | uniq)
+ 72
+ 73 while [[ -n "$group" && ! $(echo "$groups" | grep -w "$group") ]]; do
+ 74     echo "Группа '$group' не знайдена. Виберіть одну з доступних груп:"
+ 75     select group in $groups; do
+ 76         if [[ -n "$group" ]]; then
+ 77             break
+ 78         else
+ 79             echo "Невірний вибір. Сробуйте знову."
+ 80         fi
+ 81     done
+ 82 done
+ 83
+ 84 if [[ -z "$group" ]]; then
+ 85     echo "Виберіть групу:"
+ 86     select group in $groups; do
+ 87         if [[ -n "$group" ]]; then
+ 88             break
+ 89         fi
+ 90     done
+ 91 fi
+ 92
+ 93 OUTPUT_FILE=$(echo "$file" | sed 's/\.tmp$//' | sed 's/^/Google_/')
+ 94
+ 95 # tr '\r' '\n' < "$file" | head -n 5
+ 96
+ 97 echo "\"Subject\",\"Start Date\",\"Start Time\",\"End Date\",\"End Time\",\"Description\"" > "$OUTPUT_FILE"
+ 98
+ 99 lines=$(tr '\r' '\n' < "$file" | tail -n +2 | awk -F'","' '
+100 {
+101     split($2, date, ".");
+102
+103     date_key = sprintf("%02d%02d", date[2], date[1]);
+104
+105     split($3, time, ":");
+106     time_key = time[1] time[2];
+107
+108     print date_key, time_key, $0;
+109 }' | sort -k1,1n -k2,2n -k3,3n | cut -d' ' -f3-)
+110
+111 echo "$lines" | awk -F'","' -v group="$group" '
+112 BEGIN {
+113 }
+114 {
+115     gsub(/"/, "", $1);
+116     gsub(/"/, "", $NF);
+117
+118     col1 = $1;
+119     col2 = $2;
+120     col3 = $3;
+121     col4 = $4;
+122     col5 = $5;
+123     col12 = $12;
+124
+125     if (col1 ~ "^" group) {
+126         subject = substr(col1, length(group) + 4);
+127
+128         if (!(subject in lesson_counter_map)) lesson_counter_map[subject] = 0;
+129         if (!(subject in practice_counter_map)) practice_counter_map[subject] = 0;
+130         if (!(subject in lab_counter_map)) lab_counter_map[subject] = 0;
+131         if (!(subject in lab_increment_map)) lab_increment_map[subject] = 0;
+132
+133         if (col1 ~ /Лк/) {
+134             lesson_counter_map[subject]++;
+135             subject = subject "; №" lesson_counter_map[subject];
+136         } else if (col1 ~ /Пз/) {
+137             practice_counter_map[subject]++;
+138             subject = subject "; №" practice_counter_map[subject];
+139         } else if (col1 ~ /Лб/) {
+140             subject_key = subject;
+141             if (lab_increment_map[subject_key] % 2 == 0) {
+142                 lab_counter_map[subject_key]++;
+143             }
+144
+145             subject = subject "; №" lab_counter_map[subject_key];
+146             lab_increment_map[subject_key]++;
+147         }
+148
+149         split(col2, date, ".");
+150         start_date = sprintf("%02d/%02d/%s", date[2], date[1], date[3]);
+151
+152         split(col4, date, ".");
+153         end_date = sprintf("%02d/%02d/%s", date[2], date[1], date[3]);
+154
+155         start_time = substr(col3, 1, 5);
+156         end_time = substr(col5, 1, 5);
+157
+158         print "\"" subject "\",\"" start_date "\",\"" start_time "\",\"" end_date "\",\"" end_time "\",\"" col12 "\"";
+159     }
+160 }' >> "$OUTPUT_FILE"
+161
+162 unix2dos "$OUTPUT_FILE"
+163
+164 if [ -f "$TEMP_FILE" ]; then
+165     rm "$TEMP_FILE"
+166 fi
+167
+168 if ! $QUIET; then
+169     cat "$OUTPUT_FILE"
+170 fi
+171
+172 echo "Результат записаний до файлу $OUTPUT_FILE"
+173 exit 0
