@@ -57,6 +57,8 @@ if [[ -z "$file" ]]; then
     select file in $csv_files; do
         if [[ -n "$file" ]]; then
             break
+        else
+            echo "Невірний вибір. Спробуйте знову."    
         fi
     done
 fi
@@ -86,13 +88,13 @@ if [[ -z "$group" ]]; then
     select group in $groups; do
         if [[ -n "$group" ]]; then
             break
+        else
+            echo "Невірний вибір. Сробуйте знову."
         fi
     done
 fi
 
 OUTPUT_FILE=$(echo "$file" | sed 's/\.tmp$//' | sed 's/^/Google_/')
-
-# tr '\r' '\n' < "$file" | head -n 5
 
 echo "\"Subject\",\"Start Date\",\"Start Time\",\"End Date\",\"End Time\",\"Description\"" > "$OUTPUT_FILE"
 
