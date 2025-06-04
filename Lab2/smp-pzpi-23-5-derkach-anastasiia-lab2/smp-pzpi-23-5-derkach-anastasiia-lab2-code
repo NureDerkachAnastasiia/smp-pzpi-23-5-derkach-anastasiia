@@ -78,7 +78,7 @@ function handleBuy(&$cart, $products){
             continue;
         }
         $qty = (int) $qty;
-        if($qty < $MIN_QUANTITY || $qty > $MAX_QUANTITY) {
+        if($qty < $MIN_QUANTITY || $qty >= $MAX_QUANTITY) {
             echo "ПОМИЛКА! Кількість повинна бути більше {$MIN_QUANTITY} і менше {$MAX_QUANTITY}\n";
             continue;
         }
