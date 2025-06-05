@@ -11,7 +11,6 @@ if ($action === 'add' && isset($_POST['product_id'])) {
     $productId = $_POST['product_id'];
     $quantity = (int) ($_POST['quantity'] ?? 1);
 
-    // Проверяем, есть ли товар уже в корзине
     $stmt = $db->prepare("SELECT id, quantity FROM cart WHERE session_id = :sid AND product_id = :pid");
     $stmt->bindValue(':sid', $sessionId, SQLITE3_TEXT);
     $stmt->bindValue(':pid', $productId, SQLITE3_INTEGER);
