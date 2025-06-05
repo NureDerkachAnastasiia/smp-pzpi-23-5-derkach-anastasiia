@@ -1,1 +1,388 @@
+МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ
+ХАРКІВСЬКИЙ НАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ РАДІОЕЛЕКТРОНІКИ
+
+
+Кафедра «Програмна інженерія»
+
+
+
+ЗВІТ
+з лабораторної роботи №3
+з дисципліни «Скриптові мови програмування»
+
+
+
+
+
+
+Виконала:									Перевірив:
+ст. гр. ПЗПІ-23-5								ст. викл. каф. ПІ
+Деркач Анастасія								Сокорчук І. П.
+
+
+
+
+
+
+Харків 2025
+ЛАБОРАТОРНА РОБОТА №3
+	3.1 ІСТОРІЯ ЗМІН
+№	Дата	Версія звіту	Опис змін та виправлень
+1	05.06.2025	1.0	Створено основні розділи
+
+	3.2 ЗАВДАННЯ
+
+	Результатом лабораторної роботи має бути робочий сайт з інтернетмагазином. Він має складатися з таких розділів: 
+1. Сторінка товарів. 
+2. Сторінка «Кошик». 
+Кожна сторінка має складатися з таких частин: 
+1. «Шапка» сторінки, 
+2. Тіло сторінки. 
+3. «Підвал» або Footer сторінки. 
+На сторінці товарів необхідно відобразити список доступних для покупки найменувань з можливістю вибрати кількість одиниць товарів і кнопкою «купити». 
+Під час натискання на кнопку «купити», має відправлятися запит (відправка форми, методом POST) на сервер, де дані зберігаються в сесію. 
+На сторінці «Кошик» необхідно відобразити список обраних користувачем товарів (які були збережені у сесію). 
+Якщо ви ще не обрали жодного товару, то має бути відображений напис «Перейти до покупок» (посилання).
+
+	3.3 ОПИС ВИКОНАНОЇ РОБОТИ
+
+1.	Структура проекту
+Проєкт складається з наступних файлів:
+•	index.php — головна сторінка
+•	products.php — сторінка зі списком товарів
+•	cart.php — сторінка кошика користувача
+•	cart_actions.php — файл для обробки додавання, видалення та очищення кошика
+•	includes/header.php — шапка сайту
+•	includes/footer.php — нижній колонтитул сайту
+•	db/db.php — логіка ініціалізації бази даних
+•	db/shop.db — файл бази даних SQLite
+2.	Ініціалізація бази даних
+Файл db.php містить функцію initDB, яка створює базу даних за шляхом shop.db. У цій базі створюються дві таблиці: products (товари) та cart (кошик). Таблиця products містить поля id, name, price. Таблиця cart містить id, session_id, product_id (зовнішній ключ на products), quantity. Якщо таблиця products порожня, до неї автоматично додаються тестові товари.
+3.	Головна сторінка
+index.php містить вітальний текст та кнопку для переходу до сторінки з товарами. Використано загальний header і footer для всіх сторінок. Стилізація виконана через вбудовані стилі.
+4.	Сторінка товарів
+products.php виводить список товарів з бази у вигляді таблиці. Кожен товар має поле для вибору кількості та кнопку "Додати". При додаванні відправляється POST-запит на cart_actions.php, який додає обраний товар у кошик.
+5.	Сторінка кошика
+cart.php виводить усі товари, що додані до кошика поточного користувача. Виводиться назва товару, ціна, кількість та загальна сума. Додано кнопки "Видалити", "Очистити кошик" та "Оплатити". При натисканні на "Оплатити" користувач повертається на головну сторінку, де з'являється повідомлення подяки.
+6.	Навігація та зовнішній вигляд
+У header.php реалізовано просту навігацію з посиланнями на всі сторінки. Активна сторінка підсвічується. У footer.php розміщені ті ж посилання меншим шрифтом, без виділення. Footer закріплений внизу сторінки. Всі кнопки мають однаковий стиль.
+
+	3.4 ВИСНОВКИ
+
+У результаті виконання лабораторної роботи було створено повноцінний динамічний вебзастосунок з функціональністю інтернет-магазину. Отримано практичні навички роботи з локальним PHP-сервером, використання SQLite для зберігання інформації, динамічного виведення та обробки даних через PHP, створення адаптивної структури сайту з повторно використовуваними компонентами.
+ 
+ДОДАТОК А
+Відеозапис
+
+Відеозапис презентації результатів виконаної лабораторної роботи: https://youtu.be/uZMC-dI2Mhk
+
+Хронологічний опис відеозапису:
+00:00 Вступ 
+00:10 Пояснення по коду 
+18:08 Демонстрація роботи програми
+ 
+ДОДАТОК Б
+Графічні матеріали
+
+ 
+Рисунок Б.1 – Головна сторінка сайту
+
+ 
+Рисунок Б.2 – Сторінка товарів
+
+ 
+Рисунок Б.3 – Кошик покупця
+ 
+ДОДАТОК В
+Програмний код
+
+В.1 Файл index.php
+GitHub репозиторій: https://github.com/NureDerkachAnastasiia/smp-pzpi-23-5-derkach-anastasiia/blob/main/Lab3/smp-pzpi-23-5-derkach-anastasiia-lab3/index.php
+  1 <!DOCTYPE html>
+  2 <html lang="uk">
+  3 <head>
+  4     <meta charset="UTF-8">
+  5     <title>Ласкаво просимо</title>
+  6     <style>
+  7         body { font-family: sans-serif; padding: 20px; text-align: center; }
+  8         .welcome { margin-top: 50px; }
+  9         .btn {
+ 10             margin-top: 20px;
+ 11             display: inline-block;
+ 12             padding: 10px 20px;
+ 13             background-color: #007bff;
+ 14             color: white;
+ 15             text-decoration: none;
+ 16             border-radius: 4px;
+ 17         }
+ 18         .btn:hover {
+ 19             background-color: #0056b3;
+ 20         }
+ 21     </style>
+ 22 </head>
+ 23 <body>
+ 24
+ 25 <?php include 'includes/header.php'; ?>
+ 26 <?php if (isset($_GET['paid']) && $_GET['paid'] == 1): ?>
+ 27     <p style="background: #d4edda; color: #155724; padding: 10px; border: 1px solid #c3e6cb; border-radius: 4px;">
+ 28         Дякуємо за покупку! Ви можете продовжити перегляд товарів.
+ 29     </p>
+ 30 <?php endif; ?>
+ 31 <div class="welcome">
+ 32     <h1>Ласкаво просимо до нашого магазину!</h1>
+ 33     <p>Натисніть кнопку нижче, щоб переглянути доступні товари.</p>
+ 34     <a href="products.php" class="btn">До товарів</a>
+ 35 </div>
+ 36
+ 37 <?php include 'includes/footer.php'; ?>
+ 38
+ 39 </body>
+ 40 </html>
+
+
+В.2 – Файл products.php
+GitHub репозиторій: http://github.com/NureDerkachAnastasiia/smp-pzpi-23-5-derkach-anastasiia/blob/main/Lab3/smp-pzpi-23-5-derkach-anastasiia-lab3/products.php
+
+  1 <?php
+  2 require_once __DIR__ . '/db/db.php';
+  3 $db = initDB(__DIR__ . '/db/shop.db');
+  4
+  5 session_start();
+  6 $sessionId = session_id();
+  7
+  8 $result = $db->query("SELECT * FROM products");
+  9 ?>
+ 10
+ 11 <!DOCTYPE html>
+ 12 <html lang="uk">
+ 13 <head>
+ 14     <meta charset="UTF-8">
+ 15     <title>Товари</title>
+ 16     <style>
+ 17         body { font-family: sans-serif; padding: 20px; }
+ 18         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+ 19         th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+ 20         form { display: inline; margin: 0; }
+ 21         .button {
+ 22             background-color: #007BFF;
+ 23             color: white;
+ 24             padding: 8px 14px;
+ 25             border: none;
+ 26             border-radius: 4px;
+ 27             text-decoration: none;
+ 28             font-weight: bold;
+ 29             cursor: pointer;
+ 30         }
+ 31
+ 32         .button:hover {
+ 33             background-color: #0056b3;
+ 34         }
+ 35     </style>
+ 36 </head>
+ 37 <body>
+ 38
+ 39 <?php include 'includes/header.php'; ?>
+ 40
+ 41 <h1>Виберіть товари</h1>
+ 42
+ 43 <table>
+ 44     <tr>
+ 45         <th>Назва</th>
+ 46         <th>Ціна</th>
+ 47         <th>Кількість</th>
+ 48         <th></th>
+ 49     </tr>
+ 50
+ 51     <?php while ($row = $result->fetchArray(SQLITE3_ASSOC)): ?>
+ 52         <tr>
+ 53             <td><?= htmlspecialchars($row['name']) ?></td>
+ 54             <td><?= number_format($row['price'], 2) ?> грн</td>
+ 55             <td>
+ 56                 <form method="post" action="cart_actions.php">
+ 57                     <input type="hidden" name="action" value="add">
+ 58                     <input type="hidden" name="product_id" value="<?= $row['id'] ?>">
+ 59                     <input type="number" name="quantity" value="1" min="1" style="width: 50px;">
+ 60             </td>
+ 61             <td>
+ 62                     <button type="submit" class="button">Додати</button>
+ 63                 </form>
+ 64             </td>
+ 65         </tr>
+ 66     <?php endwhile; ?>
+ 67 </table>
+ 68
+ 69 <?php include 'includes/footer.php'; ?>
+ 70
+ 71 </body>
+ 72 </html>
+
+В.3 – Файл cart.php
+GitHub репозиторій: https://github.com/NureDerkachAnastasiia/smp-pzpi-23-5-derkach-anastasiia/blob/main/Lab3/smp-pzpi-23-5-derkach-anastasiia-lab3/cart.php
+
+  1 <?php
+  2 require_once __DIR__ . '/db/db.php';
+  3 $db = initDB(__DIR__ . '/db/shop.db');
+  4
+  5 session_start();
+  6 $sessionId = session_id();
+  7
+  8 // Получаем содержимое корзины
+  9 $query = "
+ 10     SELECT
+ 11         c.product_id,
+ 12         p.name,
+ 13         p.price,
+ 14         c.quantity,
+ 15         (p.price * c.quantity) AS total
+ 16     FROM cart c
+ 17     JOIN products p ON c.product_id = p.id
+ 18     WHERE c.session_id = :sid
+ 19 ";
+ 20
+ 21 $stmt = $db->prepare($query);
+ 22 $stmt->bindValue(':sid', $sessionId, SQLITE3_TEXT);
+ 23 $result = $stmt->execute();
+ 24
+ 25 $items = [];
+ 26 $totalSum = 0;
+ 27
+ 28 while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+ 29     $items[] = $row;
+ 30     $totalSum += $row['total'];
+ 31 }
+ 32 ?>
+ 33
+ 34 <!DOCTYPE html>
+ 35 <html lang="uk">
+ 36 <head>
+ 37     <meta charset="UTF-8">
+ 38     <title>Кошик</title>
+ 39     <style>
+ 40         body { font-family: sans-serif; padding: 20px; }
+ 41         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+ 42         th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+ 43         .actions form { display: inline; margin: 0; }
+ 44         .clear-btn { margin-top: 20px; }
+ 45         .button {
+ 46             background-color: #dc3545;
+ 47             color: white;
+ 48             padding: 8px 14px;
+ 49             border: none;
+ 50             border-radius: 4px;
+ 51             text-decoration: none;
+ 52             font-weight: bold;
+ 53             cursor: pointer;
+ 54         }
+ 55
+ 56         .button:hover {
+ 57             background-color: #a71d2a;
+ 58         }
+ 59
+ 60         .button-pay {
+ 61             background-color: #007bff;
+ 62         }
+ 63
+ 64         .button-pay:hover {
+ 65             background-color: #0056b3;
+ 66         }
+ 67     </style>
+ 68 </head>
+ 69 <body>
+ 70
+ 71 <?php include 'includes/header.php'; ?>
+ 72
+ 73 <h1>Ваш кошик</h1>
+ 74
+ 75 <?php if (empty($items)): ?>
+ 76     <p>Кошик порожній.</p>
+ 77 <?php else: ?>
+ 78     <table>
+ 79         <tr>
+ 80             <th>Назва</th>
+ 81             <th>Ціна</th>
+ 82             <th>Кількість</th>
+ 83             <th>Сума</th>
+ 84             <th>Дія</th>
+ 85         </tr>
+ 86         <?php foreach ($items as $item): ?>
+ 87             <tr>
+ 88                 <td><?= htmlspecialchars($item['name']) ?></td>
+ 89                 <td><?= number_format($item['price'], 2) ?> грн</td>
+ 90                 <td><?= $item['quantity'] ?></td>
+ 91                 <td><?= number_format($item['total'], 2) ?> грн</td>
+ 92                 <td class="actions">
+ 93                     <form method="post" action="cart_actions.php">
+ 94                         <input type="hidden" name="action" value="remove">
+ 95                         <input type="hidden" name="product_id" value="<?= $item['product_id'] ?>">
+ 96                         <button type="submit" class="button">Видалити</button>
+ 97                     </form>
+ 98                 </td>
+ 99             </tr>
+100         <?php endforeach; ?>
+101         <tr>
+102             <td colspan="3" style="text-align: right;"><strong>Разом:</strong></td>
+103             <td><strong><?= number_format($totalSum, 2) ?> грн</strong></td>
+104             <td></td>
+105         </tr>
+106     </table>
+107
+108     <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+109         <form method="post" action="cart_actions.php">
+110             <input type="hidden" name="action" value="clear">
+111             <button type="submit" class="button button-danger">Очистити кошик</button>
+112         </form>
+113
+114         <form method="post" action="checkout.php">
+115             <button type="submit" class="button button-pay">Оплатити</button>
+116         </form>
+117     </div>
+118 <?php endif; ?>
+119
+120 <?php include 'includes/footer.php'; ?>
+121
+122 </body>
+123 </html>
+
+В. 4 – Файл db.php
+GitHub репозиторій: https://github.com/NureDerkachAnastasiia/smp-pzpi-23-5-derkach-anastasiia/blob/main/Lab3/smp-pzpi-23-5-derkach-anastasiia-lab3/db/db.php
+  1 <?php
+  2
+  3 $dbPath = __DIR__ . '/shop.db';
+  4 function initDB(string $dbPath): SQLite3 {
+  5
+  6     global $dbPath;
+  7
+  8     $db = new SQLite3($dbPath);
+  9
+ 10     $db->exec("CREATE TABLE IF NOT EXISTS products (
+ 11         id INTEGER PRIMARY KEY AUTOINCREMENT,
+ 12         name TEXT,
+ 13         price REAL
+ 14     )");
+ 15
+ 16     $db->exec("CREATE TABLE IF NOT EXISTS cart (
+ 17         id INTEGER PRIMARY KEY AUTOINCREMENT,
+ 18         session_id TEXT,
+ 19         product_id INTEGER,
+ 20         quantity INTEGER DEFAULT 1,
+ 21         FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE
+ 22     )");
+ 23
+ 24     $count = $db->querySingle("SELECT COUNT(*) FROM products");
+ 25     if ($count == 0) {
+ 26         $db->exec("INSERT INTO products (name, price) VALUES
+ 27             ('Молоко пастеризоване', 12),
+ 28             ('Хліб чорний', 9),
+ 29             ('Сир білий', 21),
+ 30             ('Сметана 20%', 25),
+ 31             ('Кефір 1%', 19),
+ 32             ('Вода газована', 18),
+ 33             ('Печиво \"Весна\"', 14)
+ 34         ");
+ 35     }
+ 36
+ 37     return $db;
+ 38 }
+
+
 
