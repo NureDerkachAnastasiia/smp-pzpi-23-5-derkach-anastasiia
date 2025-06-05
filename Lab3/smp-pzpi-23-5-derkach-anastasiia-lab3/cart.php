@@ -4,8 +4,6 @@ $db = initDB(__DIR__ . '/db/shop.db');
 
 session_start();
 $sessionId = session_id();
-
-// Получаем содержимое корзины
 $query = "
     SELECT
         c.product_id,
