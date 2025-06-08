@@ -114,6 +114,7 @@ for ((...)); do ... done
 Відеозапис
 
 Роботу було захищено на парі.
+https://youtu.be/VuM1utLWP6w
 
 ДОДАТОК Б
 Код функції draw_branch_layer
